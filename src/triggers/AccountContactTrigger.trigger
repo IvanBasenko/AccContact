@@ -7,7 +7,7 @@ trigger AccountContactTrigger on AccountContact__c (before insert, before delete
         if (Trigger.isInsert) {
             AccContactService.insertAccCon(Trigger.new);
         } else if (Trigger.isDelete) {
-
+            AccContactService.onDelete(Trigger.old);
         }
 
     } else if (Trigger.isAfter) {
