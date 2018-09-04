@@ -22,12 +22,12 @@ public with sharing class AccContactService {
                 }
             }
         }
-        System.debug(accountContacts);
     }
 
     public static void updateAccContact(List<AccountContact__c> accountContacts, Map<Id, AccountContact__c> oldMapAccountContacts) {
         List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
         List<AccountContact__c> updatedList = new List<AccountContact__c>();
+        List<AccountContact__c> changedList = new List<AccountContact__c>();
         for (AccountContact__c accountContact : accountContacts) {
             if (accountContact.isPrimary__c == true && oldMapAccountContacts.get(accountContact.Id).isPrimary__c == false) {
                 for (AccountContact__c createdAccountContact : createdAccCon) {
@@ -40,7 +40,12 @@ public with sharing class AccContactService {
                         updatedList.add(newAccountContact);
                     }
                 }
+            } else if (accountContact.isPrimary__c == false && oldMapAccountContacts.get(accountContact.Id).isPrimary__c == true) {
+                changedList.add(accountContact);
             }
+        }
+        if (changedList.size() > 0) {
+            changeIsPrimaryByDate(changedList);
         }
         update updatedList;
     }
@@ -72,7 +77,6 @@ public with sharing class AccContactService {
         List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
         List<AccountContact__c> updatedList = new List<AccountContact__c>();
         Map<Id, List<AccountContact__c>> contactMap = getContactsAccountContactsByIdContact(accountContacts, createdAccCon);
-        System.debug(contactMap);
         for (Id contactId : contactMap.keySet()) {
             for (AccountContact__c accountContact : accountContacts) {
                 if (contactMap.get(contactId).get(0).Id == accountContact.Id) {
@@ -83,9 +87,6 @@ public with sharing class AccContactService {
                 updatedList.add(newAccountContact);
             }
         }
-        System.debug(contactMap);
-        System.debug(updatedList);
-        System.debug(createdAccCon);
         update updatedList;
     }
 
