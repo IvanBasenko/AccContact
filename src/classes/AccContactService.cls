@@ -52,7 +52,7 @@ public with sharing class AccContactService {
         for (AccountContact__c accountContact : accountContacts) {
             contactMap.put(accountContact.Contact__c, new List<AccountContact__c>());
             for (AccountContact__c oldAccountContact : createdAccCon) {
-                if (oldAccountContact.Contact__c == accountContact.Contact__c) {
+                if (oldAccountContact.Contact__c == accountContact.Contact__c && accountContact.Id != oldAccountContact.Id) {
                     contactMap.get(oldAccountContact.Contact__c).add(oldAccountContact);
                 }
 
@@ -89,7 +89,7 @@ public with sharing class AccContactService {
     }
 
     private static List<AccountContact__c> getAllAccountContactsForContactId(List<AccountContact__c> accountContacts) {
-        List<AccountContact__c> allAccountContacts = [SELECT Id,isPrimary__c, CreatedDate, Account__c, Contact__c FROM AccountContact__c WHERE Contact__r.Id IN :getContactIds(accountContacts) ORDER BY CreatedDate];
+        List<AccountContact__c> allAccountContacts = [SELECT Id, isPrimary__c, CreatedDate, Account__c, Contact__c FROM AccountContact__c WHERE Contact__r.Id IN :getContactIds(accountContacts) ORDER BY CreatedDate];
         return allAccountContacts;
 
     }
