@@ -11,8 +11,10 @@ trigger AccountContactTrigger on AccountContact__c (before insert, before delete
         }
 
     } else if (Trigger.isAfter) {
-        if (Trigger.isUpdate) {
-            AccContactService.updateAccContact(Trigger.new, Trigger.oldMap);
+        if (CheckRecursive.runOnce()) {
+            if (Trigger.isUpdate) {
+                AccContactService.updateAccContact(Trigger.new, Trigger.oldMap);
+            }
         }
     }
 
