@@ -15,4 +15,8 @@ public with sharing class AccContactTriggerHandler {
     public void onAfterUpdateAccContact(List<AccountContact__c> accountContacts, Map<Id, AccountContact__c> oldAccountContactsByIds) {
         accContactService.updateAccContact(accountContacts, oldAccountContactsByIds);
     }
+
+    public void onBeforeUpdateAccContact(List<AccountContact__c> accountContacts, Map<Id, AccountContact__c> oldAccountContactsByIds) {
+        accContactService.onBeforeUpdateAccContact(accountContacts, oldAccountContactsByIds);
+    }
 }
