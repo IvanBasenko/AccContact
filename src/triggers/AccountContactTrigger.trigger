@@ -3,17 +3,18 @@
  */
 
 trigger AccountContactTrigger on AccountContact__c (before insert, before delete, after update) {
+    AccContactTriggerHandler accContactTriggerHandler = new AccContactTriggerHandler();
     if (Trigger.isBefore) {
         if (Trigger.isInsert) {
-            AccContactService.insertAccCon(Trigger.new);
+            accContactTriggerHandler.onBeforeInsertAccContact(Trigger.new);
         } else if (Trigger.isDelete) {
-            AccContactService.onDelete(Trigger.old);
+            accContactTriggerHandler.onBeforeDeleteAccContact(Trigger.old);
         }
 
     } else if (Trigger.isAfter) {
         if (CheckRecursive.runOnce()) {
             if (Trigger.isUpdate) {
-                AccContactService.updateAccContact(Trigger.new, Trigger.oldMap);
+                accContactTriggerHandler.onAfterUpdateAccContact(Trigger.new, Trigger.oldMap);
             }
         }
     }

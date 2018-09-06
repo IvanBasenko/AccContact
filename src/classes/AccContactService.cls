@@ -3,10 +3,10 @@
  */
 
 public with sharing class AccContactService {
-    public static void insertAccCon(List<AccountContact__c> accountContacts) {
-        List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
+    public void insertAccCon(List<AccountContact__c> accountContacts) {
+        List<AccountContact__c> createdAccCon = this.getAllAccountContactsForContactId(accountContacts);
         List<AccountContact__c> removedList = new List<AccountContact__c>();
-        Map<Id, List<AccountContact__c>> contactMap = getContactsAccountContactsByIdContact(accountContacts, createdAccCon);
+        Map<Id, List<AccountContact__c>> contactMap = this.getContactsAccountContactsByIdContact(accountContacts, createdAccCon);
         for (List<AccountContact__c> accountContactsList : contactMap.values()) {
             if (!accountContactsList.isEmpty()) {
                 for (AccountContact__c accountContact : accountContacts) {
@@ -26,8 +26,8 @@ public with sharing class AccContactService {
         }
     }
 
-    public static void updateAccContact(List<AccountContact__c> accountContacts, Map<Id, AccountContact__c> oldMapAccountContacts) {
-        List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
+    public void updateAccContact(List<AccountContact__c> accountContacts, Map<Id, AccountContact__c> oldMapAccountContacts) {
+        List<AccountContact__c> createdAccCon = this.getAllAccountContactsForContactId(accountContacts);
         List<AccountContact__c> updatedList = new List<AccountContact__c>();
         List<AccountContact__c> changedList = new List<AccountContact__c>();
         for (AccountContact__c accountContact : accountContacts) {
@@ -43,11 +43,20 @@ public with sharing class AccContactService {
             }
         }
         if (changedList.size() > 0) {
-            changeIsPrimaryByDate(changedList);
+            this.changeIsPrimaryByDate(changedList);
         }
         update updatedList;
     }
-    private static Map<Id, List<AccountContact__c>> getContactsAccountContactsByIdContact(List<AccountContact__c> accountContacts, List<AccountContact__c> createdAccCon) {
+
+    public void onDeleteAccount(List<Account> accounts) {
+        delete [SELECT Id FROM AccountContact__c WHERE Account__c IN :getIds(accounts, 'Id')];
+    }
+
+    public void onDeleteContact(List<Contact> contacts) {
+        delete [SELECT Id FROM AccountContact__c WHERE Contact__c IN :getIds(contacts, 'Id')];
+    }
+
+    private Map<Id, List<AccountContact__c>> getContactsAccountContactsByIdContact(List<AccountContact__c> accountContacts, List<AccountContact__c> createdAccCon) {
         Map<Id, List<AccountContact__c>> contactMap = new Map<Id, List<AccountContact__c>>();
         for (AccountContact__c accountContact : accountContacts) {
             contactMap.put(accountContact.Contact__c, new List<AccountContact__c>());
@@ -61,17 +70,17 @@ public with sharing class AccContactService {
         return contactMap;
     }
 
-    public static void onDelete(List<AccountContact__c> accountContacts) {
+    public void onDelete(List<AccountContact__c> accountContacts) {
         List<AccountContact__c> deletedListWhereIsPrimaryTrue = new List<AccountContact__c>();
         for (AccountContact__c accountContact : accountContacts) {
             if (accountContact.isPrimary__c == true) {
                 deletedListWhereIsPrimaryTrue.add(accountContact);
             }
         }
-        changeIsPrimaryByDate(deletedListWhereIsPrimaryTrue);
+        this.changeIsPrimaryByDate(deletedListWhereIsPrimaryTrue);
     }
 
-    private static void changeIsPrimaryByDate(List<AccountContact__c> accountContacts) {
+    private void changeIsPrimaryByDate(List<AccountContact__c> accountContacts) {
         List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
         Set<AccountContact__c> updatedSet = new Set<AccountContact__c>();
         Map<Id, List<AccountContact__c>> contactMap = getContactsAccountContactsByIdContact(accountContacts, createdAccCon);
@@ -88,17 +97,17 @@ public with sharing class AccContactService {
         update updatedList;
     }
 
-    private static List<AccountContact__c> getAllAccountContactsForContactId(List<AccountContact__c> accountContacts) {
-        List<AccountContact__c> allAccountContacts = [SELECT Id, isPrimary__c, CreatedDate, Account__c, Contact__c FROM AccountContact__c WHERE Contact__r.Id IN :getContactIds(accountContacts) ORDER BY CreatedDate];
+    private List<AccountContact__c> getAllAccountContactsForContactId(List<AccountContact__c> accountContacts) {
+        List<AccountContact__c> allAccountContacts = [SELECT Id, isPrimary__c, CreatedDate, Account__c, Contact__c FROM AccountContact__c WHERE Contact__r.Id IN :getIds(accountContacts, 'Contact__c') ORDER BY CreatedDate];
         return allAccountContacts;
 
     }
 
-    private static Set<Id> getContactIds(List<AccountContact__c> accountContacts) {
-        Set<Id> contactIds = new Set<Id>();
-        for (AccountContact__c accountContact : accountContacts) {
-            contactIds.add(accountContact.Contact__c);
+    private Set<Id> getIds(List<SObject> sObjects, String variable) {
+        Set<Id> ids = new Set<Id>();
+        for (SObject obj : sObjects) {
+            ids.add((Id) obj.get(variable));
         }
-        return contactIds;
+        return ids;
     }
 }
