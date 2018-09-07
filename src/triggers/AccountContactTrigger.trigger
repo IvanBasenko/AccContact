@@ -19,5 +19,4 @@ trigger AccountContactTrigger on AccountContact__c (before insert, before delete
             }
         }
     }
-
 }
