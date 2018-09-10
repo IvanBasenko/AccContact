@@ -4,7 +4,6 @@
 
 trigger ContactTrigger on Contact (before delete) {
     ContactTriggerHandler contactTriggerHandler = new ContactTriggerHandler();
-
     if (Trigger.isBefore) {
         if (Trigger.isDelete) {
             contactTriggerHandler.onBeforeDeleteContacts(Trigger.old);
