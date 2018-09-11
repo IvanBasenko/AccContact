@@ -6,8 +6,8 @@
 private class AccContactPrimaryChangeServiceTest {
 
     @IsTest static void testInsert() {
-        List<Account> accounts = TestDataFactory.generateAccounts(100);
-        List<Contact> contacts = TestDataFactory.generateContacts(100);
+        List<Account> accounts = TestDataFactory.generateAccounts(200);
+        List<Contact> contacts = TestDataFactory.generateContacts(200);
         List<AccountContact__c> accountContacts = new List<AccountContact__c>();
         for (Integer i = 0; i < accounts.size(); i++) {
             AccountContact__c accountContact = new AccountContact__c();
@@ -20,7 +20,7 @@ private class AccContactPrimaryChangeServiceTest {
         }
         insert accountContacts;
 
-        System.assertEquals(99, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = true]);
+        System.assertEquals(199, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = true]);
     }
     @isTest
     static void TestUpdateAccountContactsWithIsPrimaryFieldTrue() {
@@ -57,7 +57,21 @@ private class AccContactPrimaryChangeServiceTest {
             }
         }
     }
-    @IsTest static void TestUpdateAccContactWhereChangeContact() {
+    @isTest
+    static void superUpdateTest() {
+        List<Account> accounts = TestDataFactory.generateAccounts(200);
+        List<Contact> contacts = TestDataFactory.generateContacts(200);
+        List<AccountContact__c> accountContactsForUpdate = new List<AccountContact__c>();
 
+
+        Test.startTest();
+        List<AccountContact__c> accountContacts = TestDataFactory.generateAccContacts(accounts, contacts);
+        Test.stopTest();
+        List<AccountContact__c> verifyAccountContacts = [SELECT Id, isPrimary__c FROM AccountContact__c];
+        System.assertEquals(false, verifyAccountContacts[0].isPrimary__c);
+        System.assertEquals(true, verifyAccountContacts[1].isPrimary__c);
+        System.assertEquals(198, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = true]);
+        System.debug([SELECT Id, isPrimary__c FROM AccountContact__c WHERE Contact__c = :contacts[3].Id]);
+        System.assertEquals(2, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = false AND Contact__c = :contacts[3].Id]);
     }
 }
