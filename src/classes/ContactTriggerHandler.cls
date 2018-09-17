@@ -3,7 +3,12 @@
  */
 
 public with sharing class ContactTriggerHandler {
-    AccContactPrimaryChangeService accContactService = new AccContactPrimaryChangeService();
+    AccContactPrimaryChangeService accContactService;
+
+    public ContactTriggerHandler() {
+        accContactService = new AccContactPrimaryChangeService();
+    }
+
     public void onBeforeDeleteContacts(List<Contact> contacts) {
         accContactService.onDeleteContact(contacts);
     }
