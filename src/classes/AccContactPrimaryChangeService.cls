@@ -3,18 +3,16 @@
 */
 
 public with sharing class AccContactPrimaryChangeService {
-    public void insertAccContact(List<AccountContact__c> accountContacts) {
-        List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
+
+    public void beforeIsPrimaryValidator(List<AccountContact__c> accountContacts) {
         List<AccountContact__c> accContactListWithIsPrimaryFalse = new List<AccountContact__c>();
         Map<Id, AccountContact__c> accContactByContactIds = new Map<Id, AccountContact__c>();
-        Map<Id, List<AccountContact__c>> accContactListByContactIds = getAccContactListByContactIdsMap(accountContacts, createdAccCon, true);
+        Map<Id, List<AccountContact__c>> accContactListByContactIds = getAccContactListByContactIdsMapWithoutInserted(accountContacts);
         for (AccountContact__c accountContact : accountContacts) {
             List<AccountContact__c> accountContactsList = accContactListByContactIds.get(accountContact.Contact__c);
             if (!accountContactsList.isEmpty()) {
                 accContactListWithIsPrimaryFalse.add(accountContact);
             }
-        }
-        for (AccountContact__c accountContact : accountContacts) {
             accountContact.isPrimary__c = false;
             accContactByContactIds.put(accountContact.Contact__c, accountContact);
         }
@@ -25,6 +23,7 @@ public with sharing class AccContactPrimaryChangeService {
             }
         }
     }
+
     public void onBeforeUpdateAccContact(List<AccountContact__c> accountContacts, Map<Id, AccountContact__c> oldMapAccountContacts) {
         List<AccountContact__c> beforeUpdateAccContactCheckedList = new List<AccountContact__c>();
         Map<Id, List<AccountContact__c>> accContactByContactIds = new Map<Id, List<AccountContact__c>>();
@@ -53,8 +52,9 @@ public with sharing class AccContactPrimaryChangeService {
                 beforeUpdateAccContactCheckedList.addAll(accountContactsByContactId);
             }
         }
-        insertAccContact(beforeUpdateAccContactCheckedList);
+        beforeIsPrimaryValidator(beforeUpdateAccContactCheckedList);
     }
+
     public void updateAccContact(List<AccountContact__c> accountContacts, Map<Id, AccountContact__c> oldMapAccountContacts) {
         List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
         Map<Id, List<AccountContact__c>> updatedMap = new Map<Id, List<AccountContact__c>>();
@@ -83,11 +83,11 @@ public with sharing class AccContactPrimaryChangeService {
         }
         changedAccContactsAfterChangeContact = getAllAccountContactsForContactId(oldAccContacts);
         if (!changedAccContactsAfterChangeContact.isEmpty()) {
-            changeIsPrimaryByDate(changedAccContactsAfterChangeContact, false);
+            changeIsPrimaryByDateWithSelected(changedAccContactsAfterChangeContact);
         }
 
         if (!changedList.isEmpty()) {
-            changeIsPrimaryByDate(changedList, true);
+            changeIsPrimaryByDateWithoutSelected(changedList);
         }
 
         List<AccountContact__c> updatedList = new List<AccountContact__c>();
@@ -104,7 +104,7 @@ public with sharing class AccContactPrimaryChangeService {
                 deletedListWhereIsPrimaryTrue.add(accountContact);
             }
         }
-        changeIsPrimaryByDate(deletedListWhereIsPrimaryTrue, true);
+        changeIsPrimaryByDateWithoutSelected(deletedListWhereIsPrimaryTrue);
     }
 
     public void onDeleteAccount(List<Account> accounts) {
@@ -115,7 +115,8 @@ public with sharing class AccContactPrimaryChangeService {
         delete [SELECT Id FROM AccountContact__c WHERE Contact__c IN :getIds(contacts, 'Id')];
     }
 
-    private Map<Id, List<AccountContact__c>> getAccContactListByContactIdsMap(List<AccountContact__c> accountContacts, List<AccountContact__c> createdAccCon, Boolean flag) {
+    private Map<Id, List<AccountContact__c>> getAccContactListByContactIdsMap(List<AccountContact__c> accountContacts, Boolean flag) {
+        List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
         Map<Id, List<AccountContact__c>> accContactListByContactIds = new Map<Id, List<AccountContact__c>>();
         for (AccountContact__c accountContact : accountContacts) {
             accContactListByContactIds.put(accountContact.Contact__c, new List<AccountContact__c>());
@@ -130,31 +131,40 @@ public with sharing class AccContactPrimaryChangeService {
         }
         return accContactListByContactIds;
     }
-    private Map<Id, List<AccountContact__c>> getAccContactListByContactIdsMapWithoutInserted(List<AccountContact__c> accountContacts, List<AccountContact__c> createdAccCon) {
-        return getAccContactListByContactIdsMap(accountContacts, createdAccCon, true);
+
+    private Map<Id, List<AccountContact__c>> getAccContactListByContactIdsMapWithoutInserted(List<AccountContact__c> accountContacts) {
+        return getAccContactListByContactIdsMap(accountContacts, true);
     }
 
-    private Map<Id, List<AccountContact__c>> getAccContactListByContactIdsMapWithInserted(List<AccountContact__c> accountContacts, List<AccountContact__c> createdAccCon) {
-        return getAccContactListByContactIdsMap(accountContacts, createdAccCon, false);
+    private Map<Id, List<AccountContact__c>> getAccContactListByContactIdsMapWithInserted(List<AccountContact__c> accountContacts) {
+        return getAccContactListByContactIdsMap(accountContacts, false);
     }
-    private void changeIsPrimaryByDate(List<AccountContact__c> accountContacts, Boolean flag) {
-        List<AccountContact__c> createdAccCon = getAllAccountContactsForContactId(accountContacts);
-        Set<AccountContact__c> updatedSet = new Set<AccountContact__c>();
-        Map<Id, List<AccountContact__c>> accContactListByContactIds = getAccContactListByContactIdsMap(accountContacts, createdAccCon, flag);
-        Map<Id, List<AccountContact__c>> accountContactMapForLastRecord = getAccContactListByContactIdsMap(accountContacts, createdAccCon, false);
+
+    private void changeIsPrimaryByDateWithoutSelected(List<AccountContact__c> accountContacts) {
+        Map<Id, List<AccountContact__c>> accContactListByContactIds = getAccContactListByContactIdsMapWithoutInserted(accountContacts);
+        changeIsPrimaryByDate(accountContacts, accContactListByContactIds);
+    }
+
+    private void changeIsPrimaryByDateWithSelected(List<AccountContact__c> accountContacts) {
+        Map<Id, List<AccountContact__c>> accContactListByContactIds = getAccContactListByContactIdsMapWithInserted(accountContacts);
+        changeIsPrimaryByDate(accountContacts, accContactListByContactIds);
+    }
+
+    private void changeIsPrimaryByDate(List<AccountContact__c> accountContacts, Map<Id, List<AccountContact__c>> accContactListByContactIds) {
+        Set<AccountContact__c> setToUpdate = new Set<AccountContact__c>();
+        Map<Id, List<AccountContact__c>> accountContactMapForLastRecord = getAccContactListByContactIdsMapWithInserted(accountContacts);
         for (Id contactId : accContactListByContactIds.keySet()) {
             List<AccountContact__c> accountContactsList = accContactListByContactIds.get(contactId);
+            AccountContact__c newAccountContact = null;
             if (!accountContactsList.isEmpty()) {
-                AccountContact__c newAccountContact = accountContactsList.get(0);
-                newAccountContact.isPrimary__c = true;
-                updatedSet.add(newAccountContact);
-            } else if (accountContactsList.isEmpty()) {
-                AccountContact__c newAccountContact = accountContactMapForLastRecord.get(contactId).get(0);
-                newAccountContact.isPrimary__c = true;
-                updatedSet.add(newAccountContact);
+                newAccountContact = accountContactsList.get(0);
+            } else {
+                newAccountContact = accountContactMapForLastRecord.get(contactId).get(0);
             }
+            newAccountContact.isPrimary__c = true;
+            setToUpdate.add(newAccountContact);
         }
-        update new List<AccountContact__c>(updatedSet);
+        update new List<AccountContact__c>(setToUpdate);
     }
 
     private List<AccountContact__c> getAllAccountContactsForContactId(List<AccountContact__c> accountContacts) {
@@ -175,15 +185,15 @@ public with sharing class AccContactPrimaryChangeService {
     private Boolean whenContactChange(AccountContact__c accountContact, AccountContact__c oldAccountContact) {
         return accountContact.Contact__c != oldAccountContact.Contact__c
                 && (!accountContact.isPrimary__c && oldAccountContact.isPrimary__c == true
-                || accountContact.isPrimary__c == true && oldAccountContact.isPrimary__c == true) ? true : false;
+                || accountContact.isPrimary__c == true && oldAccountContact.isPrimary__c == true);
     }
 
     private Boolean whenNewTrueAndOldFalse(AccountContact__c accountContact, AccountContact__c oldAccountContact) {
-        return accountContact.isPrimary__c == true && !oldAccountContact.isPrimary__c ? true : false;
+        return accountContact.isPrimary__c && !oldAccountContact.isPrimary__c;
     }
 
     private Boolean whenNewFalseAndOldTrue(AccountContact__c accountContact, AccountContact__c oldAccountContact) {
-        return !accountContact.isPrimary__c && oldAccountContact.isPrimary__c == true ? true : false;
+        return !accountContact.isPrimary__c && oldAccountContact.isPrimary__c;
     }
 
     private List<AccountContact__c> setCreatedContactIsPrimaryFalse(List<AccountContact__c> createdAccountContacts, AccountContact__c accountContact) {
