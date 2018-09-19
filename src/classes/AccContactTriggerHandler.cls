@@ -10,7 +10,7 @@ public with sharing class AccContactTriggerHandler {
     }
 
     public void onBeforeInsertAccContact(List<AccountContact__c> accountContacts) {
-        accContactService.insertAccContact(accountContacts);
+        accContactService.beforeIsPrimaryValidator(accountContacts);
     }
 
     public void onBeforeDeleteAccContact(List<AccountContact__c> accountContacts) {
