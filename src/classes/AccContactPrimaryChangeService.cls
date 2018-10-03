@@ -120,12 +120,12 @@ public with sharing class AccContactPrimaryChangeService {
         Map<Id, List<AccountContact__c>> accContactListByContactIds = new Map<Id, List<AccountContact__c>>();
         for (AccountContact__c accountContact : accountContacts) {
             accContactListByContactIds.put(accountContact.Contact__c, new List<AccountContact__c>());
-            for (AccountContact__c createdAccContact : createdAccCon) {
-                if (createdAccContact.Contact__c == accountContact.Contact__c && accountContact.Id != createdAccContact.Id && flag) {
-                    accContactListByContactIds.get(createdAccContact.Contact__c).add(createdAccContact);
+            for (AccountContact__c oldAccountContact : createdAccCon) {
+                if (oldAccountContact.Contact__c == accountContact.Contact__c && accountContact.Id != oldAccountContact.Id && flag) {
+                    accContactListByContactIds.get(oldAccountContact.Contact__c).add(oldAccountContact);
                 }
-                if (createdAccContact.Contact__c == accountContact.Contact__c && !flag) {
-                    accContactListByContactIds.get(createdAccContact.Contact__c).add(createdAccContact);
+                if (oldAccountContact.Contact__c == accountContact.Contact__c && !flag) {
+                    accContactListByContactIds.get(oldAccountContact.Contact__c).add(oldAccountContact);
                 }
             }
         }
@@ -184,8 +184,8 @@ public with sharing class AccContactPrimaryChangeService {
 
     private Boolean whenContactChange(AccountContact__c accountContact, AccountContact__c oldAccountContact) {
         return accountContact.Contact__c != oldAccountContact.Contact__c
-                && (!accountContact.isPrimary__c && oldAccountContact.isPrimary__c
-                || accountContact.isPrimary__c  && oldAccountContact.isPrimary__c);
+                && (!accountContact.isPrimary__c && oldAccountContact.isPrimary__c == true
+                || accountContact.isPrimary__c == true && oldAccountContact.isPrimary__c == true);
     }
 
     private Boolean whenNewTrueAndOldFalse(AccountContact__c accountContact, AccountContact__c oldAccountContact) {
