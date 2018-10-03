@@ -3,7 +3,7 @@
  */
 
 public with sharing class CheckRecursive {
-    public static boolean run = true;
+    private static boolean run = true;
 
     public static boolean runOnce() {
 
