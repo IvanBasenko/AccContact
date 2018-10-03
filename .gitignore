@@ -5,6 +5,7 @@
 # IntelliJ project files
 .idea
 *.iml
+*.xml
 out
 gen
 .idea/illuminatedCloud.xml
@@ -13,3 +14,6 @@ gen
 .idea/workspace.xml
 AppCont.iml
 IlluminatedCloud/
+src/classes/AccContactPrimaryChangeService.cls-meta.xml
+src/classes/ImportAccountsToCSVFileBatch.cls-meta.xml
+

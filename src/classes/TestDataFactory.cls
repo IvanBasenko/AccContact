@@ -36,6 +36,5 @@ public with sharing class TestDataFactory {
         accountContacts[4].Contact__c = contacts[3].Id;
         insert accountContacts;
         return accountContacts;
-
     }
 }

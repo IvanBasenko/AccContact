@@ -23,7 +23,7 @@ private class AccContactPrimaryChangeServiceTest {
         System.assertEquals(199, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = true]);
     }
     @isTest
-    static void TestUpdateAccountContactsWithIsPrimaryFieldTrue() {
+    static void testUpdateAccountContactsWithIsPrimaryFieldTrue() {
         List<AccountContact__c>firstHalfListAccountContactsForInsert = new List<AccountContact__c>();
         List<AccountContact__c>secondHalfListAccountContactsForInsert = new List<AccountContact__c>();
         List<Account> accounts = TestDataFactory.generateAccounts(200);
@@ -45,10 +45,8 @@ private class AccContactPrimaryChangeServiceTest {
         }
         insert firstHalfListAccountContactsForInsert;
         insert secondHalfListAccountContactsForInsert;
-        Test.startTest();
         update accountContactsForUpdate;
-        Test.stopTest();
-        List<AccountContact__c> verifyAccountContacts = [SELECT Id, isPrimary__c FROM AccountContact__c];
+        List<AccountContact__c> verifyAccountContacts = [SELECT Id, isPrimary__c FROM AccountContact__c ORDER BY isPrimary__c];
         for (Integer i = 0; i < verifyAccountContacts.size(); i++) {
             if (i < 100) {
                 System.assertEquals(false, verifyAccountContacts[i].isPrimary__c);
@@ -61,17 +59,69 @@ private class AccContactPrimaryChangeServiceTest {
     static void superUpdateTest() {
         List<Account> accounts = TestDataFactory.generateAccounts(200);
         List<Contact> contacts = TestDataFactory.generateContacts(200);
-        List<AccountContact__c> accountContactsForUpdate = new List<AccountContact__c>();
 
-
-        Test.startTest();
         List<AccountContact__c> accountContacts = TestDataFactory.generateAccContacts(accounts, contacts);
-        Test.stopTest();
-        List<AccountContact__c> verifyAccountContacts = [SELECT Id, isPrimary__c FROM AccountContact__c];
-        System.assertEquals(false, verifyAccountContacts[0].isPrimary__c);
-        System.assertEquals(true, verifyAccountContacts[1].isPrimary__c);
         System.assertEquals(198, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = true]);
         System.debug([SELECT Id, isPrimary__c FROM AccountContact__c WHERE Contact__c = :contacts[3].Id]);
         System.assertEquals(2, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = false AND Contact__c = :contacts[3].Id]);
+        Contact contact = new Contact(LastName = 'sd');
+        insert contact;
+        accountContacts[0].Contact__c = contact.Id;
+        accountContacts[1].Contact__c = contact.Id;
+        accountContacts[1].isPrimary__c = true;
+        accountContacts[2].Account__c = accounts[0].Id;
+        accountContacts[6].isPrimary__c = false;
+        update accountContacts;
+    }
+    @isTest
+    static void changeAccContactWithIsPrimaryTrue() {
+        List<Account> accounts = TestDataFactory.generateAccounts(200);
+        List<Contact> contacts = TestDataFactory.generateContacts(200);
+
+        List<AccountContact__c> accountContacts = TestDataFactory.generateAccContacts(accounts, contacts);
+        AccountContact__c accountContact = [
+                SELECT Id,isPrimary__c, Account__c,Contact__c
+                FROM
+                        AccountContact__c
+                WHERE isPrimary__c = TRUE AND Contact__c = :contacts.get(3).Id
+                LIMIT 1
+        ];
+        accountContact.Contact__c = contacts.get(50).Id;
+        update accountContact;
+    }
+    @isTest
+    static void deleteAccountTest() {
+        List<Account> accounts = TestDataFactory.generateAccounts(200);
+        List<Contact> contacts = TestDataFactory.generateContacts(200);
+
+        List<AccountContact__c> accountContacts = TestDataFactory.generateAccContacts(accounts, contacts);
+        AccountContact__c accountContact = accountContacts.get(3);
+        Account account = accounts.get(0);
+        accountContact.Account__c = account.Id;
+        update accountContact;
+        delete account;
+        System.assertEquals(198, [SELECT COUNT() FROM AccountContact__c]);
+    }
+    @isTest
+    static void deleteContactTest() {
+        List<Account> accounts = TestDataFactory.generateAccounts(200);
+        List<Contact> contacts = TestDataFactory.generateContacts(200);
+
+        List<AccountContact__c> accountContacts = TestDataFactory.generateAccContacts(accounts, contacts);
+        Contact contact = contacts.get(3);
+        delete contact;
+        System.assertEquals(197, [SELECT COUNT() FROM AccountContact__c]);
+    }
+    @isTest
+    static void uncheckedIsPrimaryTest() {
+        List<Account> accounts = TestDataFactory.generateAccounts(200);
+        List<Contact> contacts = TestDataFactory.generateContacts(200);
+
+        List<AccountContact__c> accountContacts = TestDataFactory.generateAccContacts(accounts, contacts);
+        AccountContact__c accountContact = [SELECT Id,isPrimary__c, Account__c,Contact__c FROM AccountContact__c WHERE isPrimary__c = TRUE AND Contact__c = :contacts.get(3).Id LIMIT 1];
+        accountContact.isPrimary__c = false;
+        update accountContact;
+        System.assertEquals(1, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = TRUE AND Id != :accountContact.Id AND Contact__c = :contacts.get(3).Id]);
+        System.assertEquals(0, [SELECT COUNT() FROM AccountContact__c WHERE isPrimary__c = TRUE AND Id = :accountContact.Id AND Contact__c = :contacts.get(3).Id]);
     }
 }

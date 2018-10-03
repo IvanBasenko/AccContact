@@ -5,7 +5,7 @@
 trigger AccountTrigger on Account (before delete) {
     AccountTriggerHandler accountTriggerHandler = new AccountTriggerHandler();
     if (Trigger.isBefore) {
-        if (Trigger.isDelete) {
+        if(Trigger.isDelete){
             accountTriggerHandler.onBeforeDeleteAccount(Trigger.old);
         }
     }
