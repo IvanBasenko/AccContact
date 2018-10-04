@@ -4,10 +4,12 @@
 
 public with sharing class ImportAccountsToCSVFileBatch implements Database.Batchable<sObject>, Database.Stateful {
     private String stringToCsv;
+    private String query;
     private final static String FILE_NAME = 'accounts.csv';
 
-    ImportAccountsToCSVFileBatch() {
+    public ImportAccountsToCSVFileBatch() {
         stringToCsv = '';
+        query = 'SELECT ContentDownloadUrl FROM ContentDistribution ';
     }
 
     public Database.QueryLocator start(Database.BatchableContext bc) {
@@ -44,23 +46,26 @@ public with sharing class ImportAccountsToCSVFileBatch implements Database.Batch
         );
 
         if (!previousContentVersion.isEmpty()) {
-            file.ContentDocumentId = previousContentVersion.get(0).ContentDocumentId;
+            String contentDocumentId = previousContentVersion.get(0).ContentDocumentId;
+            file.ContentDocumentId = contentDocumentId;
+            query += 'WHERE ContentDocumentId =: contentDocumentId';
         }
-
         insert file;
         if (previousContentVersion.isEmpty()) {
+            String insertedFileId = file.Id;
             ContentDistribution contentDistribution = new ContentDistribution(
                     Name = FILE_NAME.substring(0, 8),
-                    ContentVersionId = file.id,
+                    ContentVersionId = insertedFileId,
                     PreferencesAllowViewInBrowser = true,
                     PreferencesLinkLatestVersion = true,
                     PreferencesNotifyOnVisit = false,
                     PreferencesPasswordRequired = false,
                     PreferencesAllowOriginalDownload = true
             );
+            query += 'WHERE ContentVersionId =: insertedFileId';
             insert contentDistribution;
         }
-
+        List<ContentDistribution> url = Database.query(query);
+        System.enqueueJob(new RESTCalloutToAnotherOrg(url[0].ContentDownloadUrl));
     }
-
 }
