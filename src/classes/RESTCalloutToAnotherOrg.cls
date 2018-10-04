@@ -22,9 +22,31 @@ public with sharing class RESTCalloutToAnotherOrg implements Queueable, Database
         this.accessToken = getAccessToken();
         if (customSettingOrgDefaultIsExist()) {
             pushNewDownloadURL();
+        } else {
+            createNewOrgDefaultCustomSetting();
         }
     }
 
+    private void createNewOrgDefaultCustomSetting() {
+        Id orgId = getOrgId();
+        String url = 'https://resourceful-fox-r4h30w-dev-ed.my.salesforce.com/services/data/v43.0/sobjects/AccountDownloadLink__c/';
+        String body = '{"DownloadLink__c":"' + publicLink + '","SetupOwnerId":"' + orgId + '"}';
+        makeHttpCallout(url, 'POST', body);
+    }
+
+    private Id getOrgId() {
+        String url = 'https://resourceful-fox-r4h30w-dev-ed.my.salesforce.com/services/data/v43.0/query/?q=SELECT+ID+FROM+Organization';
+        HttpResponse response = makeHttpCallout(url, 'GET', null);
+        if (response.getStatusCode() == 200) {
+            Map<String, Object> result = getDeserializeMap(response.getBody());
+            List<Map<String, Object>> records = new List<Map<String, Object>>();
+            for (Object o : (List<Object>) result.get('records')) {
+                records.add((Map<String, Object>) o);
+            }
+            return (Id) records.get(0).get('Id');
+        }
+        return null;
+    }
     private void pushNewDownloadURL() {
         String url = 'https://resourceful-fox-r4h30w-dev-ed.my.salesforce.com/services/data/v43.0/sobjects/AccountDownloadLink__c/' + customSettingId;
         String body = '{"DownloadLink__c":"' + publicLink + '"}';
